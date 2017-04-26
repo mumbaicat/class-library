@@ -21,7 +21,7 @@
                ];
     $upload = new FileUpload($setting);
 
-    // 文件核心上传  参数是表单元素的 那么
+    // 文件核心上传  参数是表单元素的 name
     if (!$upload->uploadFile("file"))
     {
         // 失败获取错误
