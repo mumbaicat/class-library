@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     /**
      * 更新说明
      * @author gp·s
@@ -250,17 +250,3 @@
         }
     }
     
-    /**************************test*********************************************
-     $db = new DB(DSN, DB_USER, DB_PASSWORD);
-     // 非查询
-     $result = $db->noneQuery("insert into message_table(user_id, content, time) values(:user_id, :content, :time)", array(":user_id"=>$user_id, ":content"=>$content, ":time"=>$time));
-     
-     if ($result)
-     {
-        echo "success";
-     }
-     else
-     {
-        $db->getErrorMessage();
-     }
-     */

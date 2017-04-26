@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     /**
      * 参数数组修改，索引必须相同
      * private $file_path;                                   // 上传到那个路径
@@ -312,27 +312,3 @@
         }
     }
     
-    /**************************test*********************************************
-    <?php
-        require "class/fileupload.class.php";
-
-        $setting = [
-                    'file_path' => 'upload',
-                    'is_allow_all' => true,     // 允许所有文件类型
-                    'is_rand_name' => true,
-                    'max_size' => '1000000000'
-                   ];
-        $upload = new FileUpload($setting);
-
-        // 文件核心上传
-        if (!$upload->uploadFile("file"))
-        {
-            // 失败获取错误
-            echo $upload->getErrorMessage();
-        }
-        else
-        {
-            // 成功获取新文件名
-            echo $upload->getNewFileName();
-        }
-     */
