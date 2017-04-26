@@ -33,7 +33,7 @@
         echo $upload->getNewFileName();
     }
 ```
-### 文件上传类用法
+### 数据库操作类用法
 ```php
 <?php
     // 参数和 PDO 是一样的
