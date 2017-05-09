@@ -36,6 +36,8 @@
 ### 数据库操作类用法
 ```php
 <?php
+    require "class/db.class.php";
+    
     // 参数和 PDO 是一样的
     $db = new DB(DSN, DB_USER, DB_PASSWORD);
 
