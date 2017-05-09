@@ -11,7 +11,7 @@
 ### 文件上传类用法
 ```php
 <?php
-    require "class/fileupload.class.php";
+    require "fileupload.class.php";
 
     $setting = [
                 'file_path' => 'upload', 
@@ -36,7 +36,7 @@
 ### 数据库操作类用法
 ```php
 <?php
-    require "class/db.class.php";
+    require "db.class.php";
     
     // 参数和 PDO 是一样的
     $db = new DB(DSN, DB_USER, DB_PASSWORD);
