@@ -4,7 +4,7 @@
      * @author gp·s
      * @version 1.0
      */
-    class DB
+    class DataBase
     {
         private $dbh;           // 数据库句柄
         private $statement;     // 流对象

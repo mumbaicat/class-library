@@ -4,14 +4,14 @@
   
 ### 说明
 > 
-> 文件上传类   fileupload.class.php  <br />
-> 数据库操作   db.class.php
+> 文件上传类   FileUpload.php  <br />
+> 数据库操作   DataBase.php
 > 
 
 ### 文件上传类用法
 ```php
 <?php
-    require "fileupload.class.php";
+    require "FileUpload.php";
 
     $setting = [
                 'file_path' => 'upload', 
@@ -36,10 +36,10 @@
 ### 数据库操作类用法
 ```php
 <?php
-    require "db.class.php";
-    
+    require "DataBase.php";	
+
     // 参数和 PDO 是一样的
-    $db = new DB(DSN, DB_USER, DB_PASSWORD);
+    $db = new DataBase(DSN, DB_USER, DB_PASSWORD);
 
     // 测试数据
     $id = 1;
