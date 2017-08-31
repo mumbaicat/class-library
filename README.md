@@ -35,7 +35,6 @@
       
      // 查
      DB::find(1);
-     
      DB::table('user')
          ->select(['user', 'pwd'])
          ->where('money', '>', '-1')

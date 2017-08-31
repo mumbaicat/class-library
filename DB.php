@@ -54,6 +54,12 @@ class DB
     final private function __clone(){}
     final private function __sleep(){}
 
+
+    /**
+     * 初始化配置选项
+     * @param array $config
+     * @throws Exception
+     */
     public static function initConfig($config = [])
     {
         // 判断配置是否符合要求   非空则是不符合配置文件要求
@@ -218,7 +224,7 @@ class DB
 
 
     /**
-     * 获取结果
+     * 查询主要方法 获取结果
      * @return array
      */
     public function get()
@@ -230,6 +236,10 @@ class DB
     }
 
 
+    /**
+     * 取第一条记录
+     * @return array
+     */
     public function first()
     {
         // 设置 limit 为 1
@@ -311,6 +321,11 @@ class DB
     }
 
 
+    /**
+     * 增加记录
+     * @param array $fields 增加的内容（键值对数组）
+     * @return int          返回插入后的ID
+     */
     public function insert($fields = [])
     {
         $keys = '';
@@ -330,8 +345,8 @@ class DB
             $insert_values = rtrim($insert_values, ',');
         }
 
-        $sql = "insert into {$this->table_name} (`{$keys}`) values ({$insert_values})";
-        $insert_count = $this->noneQuery($sql, $this->bind_params);
+        $this->sql = "insert into {$this->table_name} (`{$keys}`) values ({$insert_values})";
+        $insert_count = $this->noneQuery($this->sql, $this->bind_params);
 
         // 获取插入的记录 ID
         $id = $this->dbh->lastInsertId();
@@ -339,24 +354,34 @@ class DB
         return $id;
     }
 
+    /**
+     * 删除操作 可以配合 where 链式操作
+     * @return int  返回删除的记录数
+     */
     public function delete()
     {
         // 先获取条件
         $this->setWheresAndBindParam();
 
-        $sql = "delete from {$this->table_name} {$this->wheres}";
+        $this->sql = "delete from {$this->table_name} {$this->wheres}";
 
-        $delete_count = $this->noneQuery($sql, $this->bind_params);
+        $delete_count = $this->noneQuery($this->sql, $this->bind_params);
 
         return $delete_count;
     }
 
+    /**
+     * 按主键查询记录
+     * @param $id              主键ID
+     * @param string $primary  主键
+     * @return mixed
+     */
     public function find($id, $primary = 'id')
     {
-        $sql = "select {$this->field} from {$this->table_name} where `{$primary}`=?";
+        $this->sql = "select {$this->field} from {$this->table_name} where `{$primary}`=?";
 
         // 预处理查询
-        $stmt = $this->dbh->prepare($sql);
+        $stmt = $this->dbh->prepare($this->sql);
 
         $stmt->execute(array($id));
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -364,6 +389,11 @@ class DB
         return $row;
     }
 
+    /**
+     * 修改操作可以配合 where 链式操作
+     * @param array $fields 需要修改的字段（键值对数组）
+     * @return int          返回修改的记录数
+     */
     public function update($fields = [])
     {
         $set = '';
@@ -384,12 +414,111 @@ class DB
         // 先绑定修改的参数， 再获取条件
         $this->setWheresAndBindParam();
 
-        $sql = "update {$this->table_name} {$set} {$this->wheres}";
+        $this->sql = "update {$this->table_name} {$set} {$this->wheres}";
 
 
-        $update_count = $this->noneQuery($sql, $this->bind_params);
+        $update_count = $this->noneQuery($this->sql, $this->bind_params);
 
         return $update_count;
+    }
+
+    /**
+     * 获取 SQL 语句 （仅调试使用）
+     * @return mixed
+     */
+    private function getSQL()
+    {
+        $params = $this->bind_params;
+        $sql = $this->sql;
+
+        reset($params);
+
+        while (($pos = strpos($sql, '?')) !== false)
+        {
+            $sql = substr_replace($sql, current($params), $pos, strlen('?'));
+
+            // 指针往后移动一位
+            next($params);
+        }
+
+        return $sql;
+    }
+
+    /***********************************************************************
+     *     聚合函数操作
+     */
+    public function count()
+    {
+        // Start assimble Query
+        $this->sql = "select count(*) form `{$this->table_name}`";
+
+        converQuery($this->sql);
+    }
+
+    /**
+     * 聚合查询
+     */
+    public function converQuery($sql)
+    {
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_NUM)[0];
+    }
+
+
+    /**************************************************************************
+     *     分页操作
+     */
+    /**
+     * 分页操作
+     * @param $page
+     * @param $limit
+     * @return array|MareiCollection
+     */
+    public function paginate($page, $limit)
+    {
+        // Start assimble Query
+        $countSQL = "SELECT COUNT(*) FROM `$this->table`";
+        if ($this->where !== null) {
+            $countSQL .= $this->where;
+        }
+        // Start assimble Query
+        $stmt = $this->dbh->prepare($countSQL);
+        $stmt->execute($this->bindValues);
+        $totalRows = $stmt->fetch(PDO::FETCH_NUM)[0];
+        // echo $totalRows;
+        $offset = ($page-1)*$limit;
+        // Refresh Pagination Array
+        $this->pagination['currentPage'] = $page;
+        $this->pagination['lastPage'] = ceil($totalRows/$limit);
+        $this->pagination['nextPage'] = $page + 1;
+        $this->pagination['previousPage'] = $page-1;
+        $this->pagination['totalRows'] = $totalRows;
+        // if last page = current page
+        if ($this->pagination['lastPage'] ==  $page) {
+            $this->pagination['nextPage'] = null;
+        }
+        if ($page == 1) {
+            $this->pagination['previousPage'] = null;
+        }
+        if ($page > $this->pagination['lastPage']) {
+            return [];
+        }
+        $this->assimbleQuery();
+        $sql = $this->sql . " LIMIT {$limit} OFFSET {$offset}";
+        $this->getSQL = $sql;
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->execute($this->bindValues);
+        $this->rowCount = $stmt->rowCount();
+        $rows = $stmt->fetchAll(PDO::FETCH_CLASS,'MareiObj');
+        $collection= [];
+        $collection = new MareiCollection;
+        $x=0;
+        foreach ($rows as $key => $row) {
+            $collection->offsetSet($x++,$row);
+        }
+        return $collection;
     }
 
 }
