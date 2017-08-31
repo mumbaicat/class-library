@@ -25,9 +25,28 @@
     // 初始化配置
      DB::initConfig($config);
     
-     $res = DB::table('user')->select(['user', 'pwd'])->where('money', '=', '0')->AndWhere('login_count', '>', '0')->get();
+     
+     // 初始化配置之后，就可以进行 CURD 了
+     // 增
+     DB::table('user')->insert(['user' => 'admin', 'pwd' => 'admin']);
+     
+     // 删
+     DB::table('user')->where('user', '=', 'admin')->delete();
+      
+     // 查
+     DB::find(1);
+     
+     DB::table('user')
+         ->select(['user', 'pwd'])
+         ->where('money', '>', '-1')
+         ->AndWhere('login_count', '>', '-1')
+         ->orderBy('money', 'desc')
+         ->limit(2)
+         ->get();
+     
+     // 改
+     DB::table('user')->where('user', '=', 'admin')->update(['pwd' => 'admin999', 'money' => 999]);
     
-     var_dump($res);
 ```
 ### 文件上传类用法
 ```php
