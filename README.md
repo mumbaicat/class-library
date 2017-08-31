@@ -3,11 +3,32 @@
  ![gps](https://avatars0.githubusercontent.com/u/28035971?v=3&s=460 "gps")  
   
 ### 说明
-> 
+>
+> 查询构造器   DB.php  <br />
 > 文件上传类   FileUpload.php  <br />
 > 数据库操作   DataBase.php
 > 
+### 查询构造器
+```php
+<?php
+     require 'DB.php';
+     
+     
+     $config = [
+                   'host' => 'localhost',
+                   'database' => 'test',
+                   'username' => 'root',
+                   'password' => 'root',
+                   'charset' => 'utf8',
+               ];
 
+    // 初始化配置
+     DB::initConfig($config);
+    
+     $res = DB::table('user')->select(['user', 'pwd'])->where('money', '=', '0')->AndWhere('login_count', '>', '0')->get();
+    
+     var_dump($res);
+```
 ### 文件上传类用法
 ```php
 <?php
