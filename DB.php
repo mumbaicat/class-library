@@ -132,6 +132,9 @@ class DB
     }
 
 
+    /******************************************************************************
+     * 字段，条件，排序，N条
+     */
     /**
      * 要查询的字段
      * @param array $column 字段名称
@@ -320,7 +323,9 @@ class DB
         return $stmt->rowCount();
     }
 
-
+    /***************************************************************************************
+     *     通常的增删查改
+     */
     /**
      * 增加记录
      * @param array $fields 增加的内容（键值对数组）
@@ -449,19 +454,63 @@ class DB
      */
     public function count()
     {
-        // Start assimble Query
-        $this->sql = "select count(*) form `{$this->table_name}`";
+        // 设置条件和绑定参数列表
+        $this->setWheresAndBindParam();
 
-        converQuery($this->sql);
+        $this->sql = "select count(*) from `{$this->table_name}` {$this->wheres} {$this->order_by} {$this->limit}";
+
+        return $this->converQuery($this->sql, $this->bind_params);
+    }
+
+    public function max($field)
+    {
+        // 设置条件和绑定参数列表
+        $this->setWheresAndBindParam();
+
+        $this->sql = "select max({$field}) from `{$this->table_name}` {$this->wheres}";
+
+        return $this->converQuery($this->sql, $this->bind_params);
+    }
+
+    public function min($field)
+    {
+        // 设置条件和绑定参数列表
+        $this->setWheresAndBindParam();
+
+        $this->sql = "select min({$field}) from `{$this->table_name}` {$this->wheres}";
+
+        return $this->converQuery($this->sql, $this->bind_params);
+    }
+
+    public function avg($field)
+    {
+        // 设置条件和绑定参数列表
+        $this->setWheresAndBindParam();
+
+        $this->sql = "select avg({$field}) from `{$this->table_name}` {$this->wheres}";
+
+        return $this->converQuery($this->sql, $this->bind_params);
+    }
+
+    public function sum($field)
+    {
+        // 设置条件和绑定参数列表
+        $this->setWheresAndBindParam();
+
+        $this->sql = "select sum({$field}) from `{$this->table_name}` {$this->wheres}";
+
+        return $this->converQuery($this->sql, $this->bind_params);
     }
 
     /**
      * 聚合查询
      */
-    public function converQuery($sql)
+    public function converQuery($sql, $params)
     {
         $stmt = $this->dbh->prepare($sql);
-        $stmt->execute();
+
+        $stmt->execute($params);
+
 
         return $stmt->fetch(PDO::FETCH_NUM)[0];
     }
@@ -474,51 +523,10 @@ class DB
      * 分页操作
      * @param $page
      * @param $limit
-     * @return array|MareiCollection
      */
     public function paginate($page, $limit)
     {
-        // Start assimble Query
-        $countSQL = "SELECT COUNT(*) FROM `$this->table`";
-        if ($this->where !== null) {
-            $countSQL .= $this->where;
-        }
-        // Start assimble Query
-        $stmt = $this->dbh->prepare($countSQL);
-        $stmt->execute($this->bindValues);
-        $totalRows = $stmt->fetch(PDO::FETCH_NUM)[0];
-        // echo $totalRows;
-        $offset = ($page-1)*$limit;
-        // Refresh Pagination Array
-        $this->pagination['currentPage'] = $page;
-        $this->pagination['lastPage'] = ceil($totalRows/$limit);
-        $this->pagination['nextPage'] = $page + 1;
-        $this->pagination['previousPage'] = $page-1;
-        $this->pagination['totalRows'] = $totalRows;
-        // if last page = current page
-        if ($this->pagination['lastPage'] ==  $page) {
-            $this->pagination['nextPage'] = null;
-        }
-        if ($page == 1) {
-            $this->pagination['previousPage'] = null;
-        }
-        if ($page > $this->pagination['lastPage']) {
-            return [];
-        }
-        $this->assimbleQuery();
-        $sql = $this->sql . " LIMIT {$limit} OFFSET {$offset}";
-        $this->getSQL = $sql;
-        $stmt = $this->dbh->prepare($sql);
-        $stmt->execute($this->bindValues);
-        $this->rowCount = $stmt->rowCount();
-        $rows = $stmt->fetchAll(PDO::FETCH_CLASS,'MareiObj');
-        $collection= [];
-        $collection = new MareiCollection;
-        $x=0;
-        foreach ($rows as $key => $row) {
-            $collection->offsetSet($x++,$row);
-        }
-        return $collection;
+
     }
 
 }
