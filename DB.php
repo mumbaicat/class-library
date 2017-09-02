@@ -399,7 +399,7 @@ class DB
      * @param string $primary  主键
      * @return mixed
      */
-    public static function find($id, $primary = 'id')
+    public function find($id, $primary = 'id')
     {
         $this->sql = "select {$this->field} from {$this->table_name} where `{$primary}`=?";
 
