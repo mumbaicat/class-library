@@ -3,11 +3,6 @@
 
 class DB
 {
-    // PDO connection
-    private static $dsn;
-    private static $user;
-    private static $pwd;
-
     // 数据库配置
     private static $config = [
         'host' => 'host',
@@ -37,6 +32,29 @@ class DB
     // 最后生成的 sql
     private $sql;
 
+    // 分页参数
+    private $page = [
+        // 数据总条数
+        "total" => 0,
+        // 多少条记录一页
+        "page_size" => 15,
+        // 最后一页
+        "last_page" => 0,
+        // 上一页
+        "prev_page" => 0,
+        // 当前页
+        "curr_page" => 0,
+        // 下一页
+        "next_page" => 0,
+        "next_page_url" => "",
+        "prev_page_url" => "",
+        // url
+        "url" => '',
+        // 生成链接
+        "links" => null,
+        // 数据
+        "data" =>[]
+    ];
 
     /**
      * 单例不允许实例化多个
@@ -524,8 +542,156 @@ class DB
      * @param $page
      * @param $limit
      */
-    public function paginate($page, $limit)
+    public function paginate($perPage = null, $columns = ['*'], $link = '', $page = null)
     {
+        // 把分页数组转成对象
+        $this->page = json_decode(json_encode($this->page));
+
+
+        // 初始化分页参数
+        $this->initPageParams($perPage, $link);
+
+        // 生成默认分页DOM
+        $this->createPageLinks();
+
+        return $this->page;
+    }
+
+    /**
+     * 初始化分页参数
+     * @param $pageSize
+     * @param $link
+     * @param null $page
+     */
+    private function initPageParams($pageSize, $link)
+    {
+        $this->page->page_size = $pageSize;
+
+        // 获取显示页码
+        if (isset($_GET['page']))
+        {
+            $this->page->curr_page = $_GET['page'];
+        }
+        else
+        {
+            $this->page->curr_page = 1;
+        }
+
+
+        // 上一页 下一页
+        $this->page->prev_page = $this->page->curr_page - 1;
+        $this->page->next_page = $this->page->curr_page + 1;
+
+        // 总页数
+        $this->page->total = $this->count();
+
+        // 最后一页  总数/每页数目
+        $this->page->last_page = intval(ceil($this->page->total / $this->page->page_size));
+
+        // 上一页 下一页 的 URL
+        $this->page->prev_page_url = "{$link}?page={$this->page->prev_page}";
+        $this->page->next_page_url = "{$link}?page={$this->page->next_page}";
+        $this->page->url = $link;
+
+
+        // 查询当前页对应的数据
+        $curr_page_nums = ($this->page->curr_page - 1) * $this->page->page_size;
+
+        // 重新赋值 sql 语句
+        $this->sql = "select * from `{$this->table_name}` {$this->wheres} {$this->order_by} limit {$curr_page_nums}, {$this->page->page_size}";
+
+        // 当前页的数据
+        $this->page->data = $this->query($this->sql, $this->bind_params);
+    }
+
+    private function createPageLinks()
+    {
+        // 判断上一页 下一页是否可用
+        $page = [
+            'is_prev_page' => '',
+            'is_next_page' => '',
+            'content_page' => ''
+        ];
+
+
+        // 显示的按钮数目  大于五页就显示5页，否则就显示总共有多少页
+        $showcount = $this->page->last_page >= 5 ? 5 : $this->page->last_page;
+        $left = $this->page->curr_page - (int)($showcount - 1)/2;
+
+
+        if ($left < 1)
+        {
+            $left = 1;
+        }
+        elseif($left + $showcount >= $this->page->last_page)
+        {
+            $left = $this->page->last_page - $showcount + 1;
+        }
+
+        $right = $left + $showcount - 1;
+
+        // 后面的2个
+        for ($i = $left; $i <= $right; ++$i)
+        {
+            $active = '';
+
+            if ($i == $this->page->curr_page)
+            {
+                $active = 'active';
+            }
+
+            $page['content_page'] .= "<li class='{$active}'><a href='{$this->page->url}?page={$i}'>{$i}</a></li>";
+        }
+
+        // 第一页的时候
+        $first_home_label = 'a';
+        $last_end_label = 'a';
+        if ($this->page->curr_page <= 1)
+        {
+            $page['is_prev_page'] = 'disabled';
+
+            $first_home_label = 'span';
+        }
+
+
+        // 如果下一页大于最后一页
+        if ($this->page->curr_page >= $this->page->last_page)
+        {
+            $page['is_next_page'] = 'disabled';
+            $last_end_label = 'span';
+        }
+
+
+
+        $dom = <<<page
+<ul class="pagination">
+    <li class="{$page['is_prev_page']}">
+        <{$first_home_label} href="{$this->page->url}?page=1">首页</{$first_home_label}>
+    </li>
+    <li class="{$page['is_prev_page']}">
+        <{$first_home_label} href="{$this->page->prev_page_url}">&laquo;</{$first_home_label}>
+    </li>
+        {$page['content_page']}
+    <li class="{$page['is_next_page']}">
+        <{$last_end_label} href="{$this->page->next_page_url}">&raquo;</{$last_end_label}>
+    </li>
+    <li class="{$page['is_next_page']}">
+        <{$last_end_label} href="{$this->page->url}?page={$this->page->last_page}">尾页</{$last_end_label}>
+    </li>
+</ul>
+page;
+
+        $this->page->links = $dom;
+        // 存入闭包，方便函数式调用
+//        $links = function() use ($dom){
+//            return $dom;
+//        };
+//
+//        echo '<pre>';
+//        $this->page->links = $links;
+//
+//        var_dump($links === $this->page->links);
+
 
     }
 
