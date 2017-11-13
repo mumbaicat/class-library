@@ -162,13 +162,13 @@ class DB
     {
         if (empty($column))
         {
-             $this->field= '*';
+            $this->field= '*';
         }
         else
         {
-            $this->field = implode('`, `', $column);
+            $this->field = implode(', ', $column);
             // 前后各添加一个反引号
-            $this->field = '`' . $this->field . '`';
+            $this->field = ' ' . $this->field . ' ';
         }
 
         return $this;
